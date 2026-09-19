@@ -1,0 +1,10 @@
+Aquí van los reels en MP4 exportados de Canva (formato 9:16, 1080 x 1920).
+
+1. Guarda el archivo en esta carpeta con un nombre corto, sin espacios ni tildes.
+   Ejemplo: moda-1.mp4
+2. En work.js, busca el reel y escribe la ruta en el campo video:
+   video: 'videos/moda-1.mp4'
+3. Listo: la tarjeta muestra el botón de play y el reel suena al tocarlo.
+
+Mientras el campo video esté vacío, la tarjeta muestra solo la portada.
+Procura que cada MP4 pese menos de 15 MB para que cargue rápido en celular.

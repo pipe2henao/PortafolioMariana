@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Procesar imágenes</title></head>
+<body>
+<pre id="log">listo</pre>
+<script>
+// Utilidades para recortar y convertir a WebP desde el navegador.
+window.loadImg = async (src) => {
+  const img = new Image();
+  img.src = src;
+  await img.decode();
+  return img;
+};
+
+// Ajusta cada borde de una caja aproximada buscando el salto de color más fuerte.
+window.refineBox = (img, box, search = 40) => {
+  const [x0, y0, x1, y1] = box;
+  const pad = search + 2;
+  const rx = Math.max(0, x0 - pad), ry = Math.max(0, y0 - pad);
+  const rw = Math.min(img.naturalWidth, x1 + pad) - rx;
+  const rh = Math.min(img.naturalHeight, y1 + pad) - ry;
+  const c = document.createElement('canvas');
+  c.width = rw; c.height = rh;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, rx, ry, rw, rh, 0, 0, rw, rh);
+  const d = ctx.getImageData(0, 0, rw, rh).data;
+  const px = (x, y) => (y * rw + x) * 4;
+  const diff = (a, b) => Math.abs(d[a] - d[b]) + Math.abs(d[a + 1] - d[b + 1]) + Math.abs(d[a + 2] - d[b + 2]);
+
+  // banda central (evita esquinas redondeadas)
+  const bandY = [Math.round(y0 + (y1 - y0) * 0.25) - ry, Math.round(y0 + (y1 - y0) * 0.75) - ry];
+  const bandX = [Math.round(x0 + (x1 - x0) * 0.25) - rx, Math.round(x0 + (x1 - x0) * 0.75) - rx];
+
+  const colScore = (x) => { let s = 0; for (let y = bandY[0]; y < bandY[1]; y += 2) s += diff(px(x, y), px(x - 1, y)); return s; };
+  const rowScore = (y) => { let s = 0; for (let x = bandX[0]; x < bandX[1]; x += 2) s += diff(px(x, y), px(x, y - 1)); return s; };
+
+  const best = (from, to, fn) => { let bi = from, bs = -1; for (let i = from; i <= to; i++) { const s = fn(i); if (s > bs) { bs = s; bi = i; } } return bi; };
+  const L = best(x0 - rx - search, x0 - rx + search, colScore) + rx;
+  const R = best(x1 - rx - search, x1 - rx + search, colScore) + rx;
+  const T = best(y0 - ry - search, y0 - ry + search, rowScore) + ry;
+  const B = best(y1 - ry - search, y1 - ry + search, rowScore) + ry;
+  return [L, T, R, B];
+};
+
+window.saveCanvas = async (canvas, out, q = 0.8) => {
+  const blob = await new Promise((r) => canvas.toBlob(r, 'image/webp', q));
+  const res = await fetch('/__save?path=' + encodeURIComponent(out), { method: 'POST', body: blob });
+  return (await res.text()) + ' (' + Math.round(blob.size / 1024) + ' KB)';
+};
+
+// Reduce en pasos de 1/2 para que el remuestreo quede limpio.
+window.renderCrop = (img, crop, width) => {
+  let [sx, sy, sw, sh] = crop;
+  let src = img;
+  let cw = sw, ch = sh;
+  while (cw / 2 >= width) {
+    const c = document.createElement('canvas');
+    c.width = Math.round(cw / 2); c.height = Math.round(ch / 2);
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(src, sx, sy, cw, ch, 0, 0, c.width, c.height);
+    src = c; sx = 0; sy = 0; cw = c.width; ch = c.height;
+  }
+  const w = Math.min(width, cw);
+  const h = Math.round(ch * w / cw);
+  const out = document.createElement('canvas');
+  out.width = w; out.height = h;
+  const ctx = out.getContext('2d');
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(src, sx, sy, cw, ch, 0, 0, w, h);
+  return out;
+};
+</script>
+</body>
+</html>
