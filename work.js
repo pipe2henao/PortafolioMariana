@@ -94,7 +94,7 @@ window.PORTAFOLIO = {
       portada: 'img/reel-infantil-2.webp',
       alt: 'Reel infantil: niña entrando al Museum of Ice Cream, con el texto «¡Hola amigos!».',
       aspecto: '9/16',
-      video: ''
+      video: 'videos/yulianaoolaamigos.mp4'
     },
     {
       id: 'elhueco',
@@ -170,17 +170,6 @@ window.PORTAFOLIO = {
       alt: 'Reel de maternidad: mujer hablando a cámara con una taza en la mano, con el texto «La semana 40».',
       aspecto: '3/4',
       vistas: '48,8 mil',
-      video: ''
-    },
-    {
-      id: 'reel-ganaderia-1',
-      titulo: 'El ganado más caro del mundo',
-      servicio: 'video',
-      sector: 'ganaderia',
-      kicker: 'Reel',
-      portada: 'img/reel-ganaderia-1.webp',
-      alt: 'Reel de ganadería: presentadora junto a un árbol, con el texto «El ganado más caro del mundo».',
-      aspecto: '9/16',
       video: ''
     },
     {
@@ -363,7 +352,7 @@ window.PORTAFOLIO = {
       portada: 'img/reel-infantil-3.webp',
       alt: 'Reel infantil: mamá cuidando a su bebé acostado, con el texto «no existe una».',
       aspecto: '9/16',
-      video: ''
+      video: 'videos/rutinabebe.mp4'
     },
     {
       id: 'reel-moda-5',
@@ -385,7 +374,7 @@ window.PORTAFOLIO = {
       portada: 'img/reel-ganaderia-2.webp',
       alt: 'Reel de ganadería: presentadora en el potrero con ganado Wagyu al fondo, con el texto «ni idea de dónde vienen».',
       aspecto: '9/16',
-      video: ''
+      video: 'videos/dondevienen.mp4'
     },
     {
       id: 'reel-inmobiliario-4',
