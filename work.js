@@ -297,7 +297,7 @@ window.PORTAFOLIO = {
       portada: 'img/reel-infantil-1.webp',
       alt: 'Reel infantil: niña caminando frente a un centro comercial, con el texto «una clase de».',
       aspecto: '16/9',
-      video: ''
+      video: 'videos/slime.mp4'
     },
     {
       id: 'reel-ganaderia-3',
