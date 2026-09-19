@@ -443,14 +443,16 @@
       clave === t || normalizar(datos.sectores[clave].nombre) === t || normalizar(datos.sectores[clave].corto) === t);
   }
 
-  function reelDesdeCloudinary(r) {
+  function reelDesdeCloudinary(r, sectorPorEtiqueta) {
     const base = `https://res.cloudinary.com/${nube.cloud}/video/upload`;
     const ruta = `v${r.version}/${encodeURI(r.public_id)}`;
     const meta = (r.context && r.context.custom) || {};
     const nombre = r.public_id.split('/').pop();
     const [prefijo, ...resto] = nombre.split('__');
-    const clave = sectorDesde(meta.sector) || (resto.length ? sectorDesde(prefijo) : null) || nube.sectorPorDefecto || 'lifestyle';
-    const titulo = meta.titulo || meta.caption || (resto.length ? resto.join(' ') : nombre).replace(/[_-]+/g, ' ');
+    const clave = sectorPorEtiqueta[r.public_id] || sectorDesde(meta.sector)
+      || (resto.length ? sectorDesde(prefijo) : null) || nube.sectorPorDefecto || 'lifestyle';
+    const limpio = (resto.length ? resto.join(' ') : nombre).replace(/[_-]+/g, ' ').trim();
+    const titulo = meta.titulo || meta.caption || limpio.charAt(0).toUpperCase() + limpio.slice(1);
     const horizontal = r.width && r.height && r.width > r.height;
     return {
       id: `nube-${r.public_id}`,
@@ -467,16 +469,29 @@
     };
   }
 
+  // Lista de videos con una etiqueta; si nadie la tiene, Cloudinary responde 404.
+  async function listaPorEtiqueta(etiqueta) {
+    const url = `https://res.cloudinary.com/${nube.cloud}/video/list/${encodeURIComponent(etiqueta)}.json`;
+    const respuesta = await fetch(url, { cache: 'no-cache' });
+    if (respuesta.status === 404) return [];
+    if (!respuesta.ok) throw new Error(`Cloudinary respondió ${respuesta.status} para "${etiqueta}"`);
+    return (await respuesta.json()).resources || [];
+  }
+
   async function cargarCloudinary() {
     try {
-      const url = `https://res.cloudinary.com/${nube.cloud}/video/list/${encodeURIComponent(nube.etiqueta)}.json`;
-      const respuesta = await fetch(url, { cache: 'no-cache' });
-      if (!respuesta.ok) throw new Error(`Cloudinary respondió ${respuesta.status}`);
-      const { resources = [] } = await respuesta.json();
+      // Etiqueta principal + una etiqueta por sector (moda, ganaderia, maternidad…).
+      const claves = Object.keys(datos.sectores);
+      const [resources, ...porSector] = await Promise.all([
+        listaPorEtiqueta(nube.etiqueta),
+        ...claves.map((clave) => listaPorEtiqueta(clave).catch(() => []))
+      ]);
+      const sectorPorEtiqueta = {};
+      porSector.forEach((lista, i) => lista.forEach((r) => { sectorPorEtiqueta[r.public_id] = claves[i]; }));
 
       const nuevos = resources
         .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
-        .map(reelDesdeCloudinary)
+        .map((r) => reelDesdeCloudinary(r, sectorPorEtiqueta))
         .filter((p) => !proyectos.some((x) => x.id === p.id || x.video === p.video));
       if (!nuevos.length) return;
 

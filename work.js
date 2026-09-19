@@ -299,17 +299,7 @@ window.PORTAFOLIO = {
       aspecto: '16/9',
       video: 'videos/slime.mp4'
     },
-    {
-      id: 'reel-ganaderia-3',
-      titulo: 'Más de lo que crees',
-      servicio: 'video',
-      sector: 'ganaderia',
-      kicker: 'Reel',
-      portada: 'img/reel-ganaderia-3.webp',
-      alt: 'Reel de ganadería: presentadora con gorra en la finca, con el texto «más de lo que crees».',
-      aspecto: '9/16',
-      video: ''
-    },
+    
     {
       id: 'reel-moda-4',
       titulo: 'Que realzan tu figura',
