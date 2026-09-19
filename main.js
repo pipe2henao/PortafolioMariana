@@ -101,9 +101,12 @@
   const tarjetas = proyectos.map((p) => ({ p, li: crearTarjeta(p) }));
   rejilla.replaceChildren(...tarjetas.map((t) => t.li));
 
-  if (proyectos.some((p) => p.servicio === 'video' && p.video)) {
-    $('#trabajo-ayuda').textContent = 'Toca un carrusel para verlo completo o un reel para oírlo.';
+  function actualizarAyuda() {
+    if (proyectos.some((p) => p.servicio === 'video' && p.video)) {
+      $('#trabajo-ayuda').textContent = 'Toca un carrusel para verlo completo o un reel para oírlo.';
+    }
   }
+  actualizarAyuda();
 
   /* ==========================================================================
      REELS: póster y clic para reproducir con sonido
@@ -419,5 +422,74 @@
         ])
       ])
     ])));
+  }
+
+  /* ==========================================================================
+     REELS DESDE CLOUDINARY
+     Cada video subido con la etiqueta configurada en work.js aparece solo.
+     Sector y título salen de los metadatos del video (campos "sector" y
+     "titulo") o, si no hay, del nombre del archivo: "moda__Desde mi casa".
+     ========================================================================== */
+  const nube = datos.cloudinary || {};
+  if (nube.cloud && nube.etiqueta) cargarCloudinary();
+
+  function normalizar(texto) {
+    return String(texto || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  }
+
+  function sectorDesde(texto) {
+    const t = normalizar(texto);
+    return Object.keys(datos.sectores).find((clave) =>
+      clave === t || normalizar(datos.sectores[clave].nombre) === t || normalizar(datos.sectores[clave].corto) === t);
+  }
+
+  function reelDesdeCloudinary(r) {
+    const base = `https://res.cloudinary.com/${nube.cloud}/video/upload`;
+    const ruta = `v${r.version}/${encodeURI(r.public_id)}`;
+    const meta = (r.context && r.context.custom) || {};
+    const nombre = r.public_id.split('/').pop();
+    const [prefijo, ...resto] = nombre.split('__');
+    const clave = sectorDesde(meta.sector) || (resto.length ? sectorDesde(prefijo) : null) || nube.sectorPorDefecto || 'lifestyle';
+    const titulo = meta.titulo || meta.caption || (resto.length ? resto.join(' ') : nombre).replace(/[_-]+/g, ' ');
+    const horizontal = r.width && r.height && r.width > r.height;
+    return {
+      id: `nube-${r.public_id}`,
+      titulo,
+      servicio: 'video',
+      sector: clave,
+      kicker: 'Reel',
+      // Portada: un fotograma del segundo 1; video: comprimido y a 720 px.
+      portada: `${base}/so_1,${horizontal ? 'w_800' : 'w_540'},c_limit,q_auto,f_jpg/${ruta}.jpg`,
+      video: `${base}/q_auto,vc_auto,${horizontal ? 'w_1280' : 'w_720'},c_limit/${ruta}.mp4`,
+      alt: meta.alt || `Reel de ${sector(clave).nombre.toLowerCase()}: ${titulo}.`,
+      aspecto: horizontal ? '16/9' : '9/16',
+      vistas: meta.vistas || ''
+    };
+  }
+
+  async function cargarCloudinary() {
+    try {
+      const url = `https://res.cloudinary.com/${nube.cloud}/video/list/${encodeURIComponent(nube.etiqueta)}.json`;
+      const respuesta = await fetch(url, { cache: 'no-cache' });
+      if (!respuesta.ok) throw new Error(`Cloudinary respondió ${respuesta.status}`);
+      const { resources = [] } = await respuesta.json();
+
+      const nuevos = resources
+        .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+        .map(reelDesdeCloudinary)
+        .filter((p) => !proyectos.some((x) => x.id === p.id || x.video === p.video));
+      if (!nuevos.length) return;
+
+      // Los videos nuevos van primero en la rejilla.
+      const nuevasTarjetas = nuevos.map((p) => ({ p, li: crearTarjeta(p) }));
+      proyectos.unshift(...nuevos);
+      tarjetas.unshift(...nuevasTarjetas);
+      rejilla.prepend(...nuevasTarjetas.map((t) => t.li));
+      actualizarAyuda();
+      aplicarFiltros();
+    } catch (error) {
+      // Si Cloudinary no responde, la página sigue con lo que hay en work.js.
+      console.warn('No se pudieron cargar los reels de Cloudinary:', error);
+    }
   }
 })();

@@ -33,6 +33,17 @@
    ========================================================================== */
 
 window.PORTAFOLIO = {
+  /* Reels automáticos desde Cloudinary.
+     - cloud: el "Cloud name" que aparece en el panel de tu cuenta de Cloudinary.
+     - etiqueta: todo video con esta etiqueta (tag) aparece solo en la rejilla.
+     - sectorPorDefecto: se usa si el video no dice a qué sector pertenece.
+     Déjalo con cloud: '' para apagarlo. */
+  cloudinary: {
+    cloud: 'yg834b3e',
+    etiqueta: 'portafolio',
+    sectorPorDefecto: 'lifestyle'
+  },
+
   sectores: {
     moda:         { nombre: 'Moda',                 corto: 'Moda' },
     lifestyle:    { nombre: 'Lifestyle y comercio', corto: 'Lifestyle' },
